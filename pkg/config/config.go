@@ -5,13 +5,20 @@ import (
 	"os"
 )
 
+type NetworkConfig struct {
+	Port string `json:"port"`
+}
+
 type Config struct {
-	NetworkPort            int    `json:"networkPort"`
-	MiningDifficultyTarget string `json:"miningDifficultyTarget"`
-	IPFSGatewayURL         string `json:"ipfsGatewayURL"`
-	DataDir                string `json:"dataDir"`
-	MaxBlockTransactions   int    `json:"maxBlockTransactions"`
-	VMExecutionTimeout     int    `json:"vmExecutionTimeout"`
+	NetworkPort            int           `json:"networkPort"`
+	MiningDifficultyTarget string        `json:"miningDifficultyTarget"`
+	IPFSGatewayURL         string        `json:"ipfsGatewayURL"`
+	DataDir                string        `json:"dataDir"`
+	MaxBlockTransactions   int           `json:"maxBlockTransactions"`
+	VMExecutionTimeout     int           `json:"vmExecutionTimeout"`
+	DatasetHash            string        `json:"datasetHash"`
+	AlgorithmHash          string        `json:"algorithmHash"`
+	Network                NetworkConfig `json:"network"`
 }
 
 func LoadConfig(filepath string) (*Config, error) {
