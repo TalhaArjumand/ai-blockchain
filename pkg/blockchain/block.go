@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 
 	"github.com/TalhaArjumand/ai-blockchain/pkg/ipfs"
@@ -97,4 +98,16 @@ func computeMerkleRoot(hashes [][]byte) []byte {
 		hashes = newLevel
 	}
 	return hashes[0]
+}
+
+func (b *Block) ComputeHash() []byte {
+	// Serialize the block header
+	headerBytes, err := json.Marshal(b.Header)
+	if err != nil {
+		panic("Failed to serialize block header")
+	}
+
+	// Compute the hash
+	hash := sha256.Sum256(headerBytes)
+	return hash[:]
 }

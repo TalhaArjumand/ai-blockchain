@@ -34,7 +34,7 @@ func PerformProofOfWork(header []byte, difficulty string) (uint64, string) {
 			panic("Nonce overflow, PoW failed")
 		}
 	}
-	log.Printf("Mining Header: %x", header)
+	//log.Printf("Mining Header: %x", header)
 
 	return nonce, hash
 }

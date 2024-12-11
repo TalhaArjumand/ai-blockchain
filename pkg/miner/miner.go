@@ -63,6 +63,8 @@ func (miner *Miner) InitializeBlockchain() {
 			Transactions: nil, // No transactions in the genesis block
 		}
 		genesisBlock.ComputeMerkleRoot()
+		// Add this log
+		log.Printf("Genesis Block MerkleRoot: %x", genesisBlock.Header.MerkleRoot)
 
 		err := miner.Blockchain.AddBlock(genesisBlock)
 		if err != nil {
@@ -89,7 +91,8 @@ func (miner *Miner) MineBlock() *blockchain.Block {
 			Transactions: nil, // Genesis block has no transactions
 		}
 		genesisBlock.ComputeMerkleRoot()
-
+		log.Printf("Genesis Block MerkleRoot: %x", genesisBlock.Header.MerkleRoot)
+		//genesisBlock.Header.Hash = genesisBlock.ComputeHash()
 		// Add the genesis block to the blockchain
 		err := miner.Blockchain.AddBlock(genesisBlock)
 		if err != nil {
@@ -99,6 +102,10 @@ func (miner *Miner) MineBlock() *blockchain.Block {
 		log.Println("Genesis block mined successfully")
 		// Do not return here; continue to mine additional blocks
 	}
+
+	previousBlock := miner.Blockchain.Blocks[len(miner.Blockchain.Blocks)-1]
+	log.Printf("Chain Tip Hash: %x", previousBlock.Header.Hash)
+	log.Printf("Chain Tip MerkleRoot: %x", previousBlock.Header.MerkleRoot)
 
 	// Pick transactions from the mempool
 	transactions := miner.PickTransactions()
@@ -133,36 +140,37 @@ func (miner *Miner) MineBlock() *blockchain.Block {
 	}
 
 	// Create a new block with the processed transactions
-	previousHash := miner.Blockchain.Blocks[len(miner.Blockchain.Blocks)-1].Header.MerkleRoot
+
 	block := &blockchain.Block{
 		Header: blockchain.BlockHeader{
-			PreviousHash: previousHash,
+			PreviousHash: previousBlock.Header.Hash, // Use Merkle Root instead of Hash
 			Timestamp:    time.Now().UnixNano(),
 			Nonce:        0, // Initialize nonce
 		},
 		Transactions: transactions,
 	}
 
+	log.Printf("Block PreviousHash: %x", block.Header.PreviousHash)
 	// Compute Merkle root and other headers
 	block.ComputeMerkleRoot()
 	block.ComputeVMOutputsHash()
 
-	// Ensure the block has a unique Merkle Root
-	if miner.Blockchain.HasDuplicateMerkleRoot(block.Header.MerkleRoot) {
-		log.Printf("Duplicate Merkle Root detected: %x, regenerating", block.Header.MerkleRoot)
-		block.Header.Timestamp = time.Now().UnixNano()
-		block.ComputeMerkleRoot()
-	}
+	// // Ensure the block has a unique Merkle Root
+	// if miner.Blockchain.HasDuplicateMerkleRoot(block.Header.MerkleRoot) {
+	// 	log.Printf("Duplicate Merkle Root detected: %x, regenerating", block.Header.MerkleRoot)
+	// 	block.Header.Timestamp = time.Now().UnixNano()
+	// 	block.ComputeMerkleRoot()
+	// }
 
-	log.Printf("Checking if Mempool is nil: %v", miner.Mempool == nil)
-	log.Printf("Checking if Blockchain is nil: %v", miner.Blockchain == nil)
-	log.Printf("Checking if Transactions are nil: %v", miner.Mempool.Transactions == nil)
+	//	log.Printf("Checking if Mempool is nil: %v", miner.Mempool == nil)
+	//	log.Printf("Checking if Blockchain is nil: %v", miner.Blockchain == nil)
+	//	log.Printf("Checking if Transactions are nil: %v", miner.Mempool.Transactions == nil)
 
-	if miner.DifficultyTarget == "" {
-		log.Fatalf("Miner.DifficultyTarget is nil; ensure it is initialized before mining.")
-	}
+	//	if miner.DifficultyTarget == "" {
+	//		log.Fatalf("Miner.DifficultyTarget is nil; ensure it is initialized before mining.")
+	//	}
 
-	log.Printf("Before Mining Header: %x", block.Header.Bytes())
+	//log.Printf("Before Mining Header: %x", block.Header.Bytes())
 
 	nonce, hash := pow.PerformProofOfWork(block.Header.Bytes(), miner.DifficultyTarget)
 	block.Header.Nonce = uint64(nonce)
