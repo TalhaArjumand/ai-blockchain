@@ -313,6 +313,24 @@ func handleMessage(message []byte) {
 			}
 		}
 
+	case "transaction":
+		var tx network.TxMessage
+		if err := json.Unmarshal(message, &tx); err != nil {
+			log.Printf("Error unmarshalling TxMessage: %v", err)
+			return
+		}
+		log.Printf("Received transaction: %+v", tx)
+
+		// Add transaction to the mempool
+		mempoolInstance.AddTransaction(blockchain.Transaction{
+			TxID:          []byte(tx.TxID),
+			DataHash:      tx.DataHash,
+			AlgorithmHash: tx.AlgoHash,
+			Metadata:      tx.Metadata,
+			Timestamp:     tx.Timestamp,
+		})
+		log.Println("Transaction added to the mempool.")
+
 	default:
 		// Log and gracefully handle unsupported message types
 		fmt.Printf("Unknown message type: %s. Full message: %s\n", messageType, string(message))

@@ -24,17 +24,15 @@ func SendMessage(peerAddr string, message []byte) error {
 	return nil
 }
 
-// BroadcastTransaction sends a transaction to all known peers
 func BroadcastTransaction(tx TxMessage, peers []string) {
-	// Serialize the transaction into JSON
 	message, err := json.Marshal(tx)
 	if err != nil {
 		log.Printf("Error marshalling transaction: %v", err)
 		return
 	}
 
-	// Send the transaction to each peer
 	for _, peer := range peers {
+		log.Printf("Broadcasting transaction to peer: %s", peer) // Add this log
 		err := SendMessage(peer, message)
 		if err != nil {
 			log.Printf("Failed to send transaction to peer %s: %v", peer, err)

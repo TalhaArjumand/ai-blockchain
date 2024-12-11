@@ -1,25 +1,34 @@
-package kmeans
+package vm
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/TalhaArjumand/ai-blockchain/pkg/vm/kmeans"
+	"github.com/TalhaArjumand/ai-blockchain/pkg/config"
+	"github.com/TalhaArjumand/ai-blockchain/pkg/kmeans"
 )
 
-// RunVM executes the provided algorithm on the given data
 func RunVM(algorithm []byte, data []byte) ([]byte, error) {
 	if len(data) == 0 {
 		return nil, errors.New("data cannot be empty")
 	}
 
-	// If no algorithm is provided, default to K-Means
-	if algorithm == nil {
+	// Preprocess data if it's in CSV format
+	if strings.Contains(string(data), ",") {
+		parsedData, err := config.ParseCSVToJSON(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse input data: %v", err)
+		}
+		data = parsedData
+	}
+
+	algoStr := string(algorithm)
+	if strings.Contains(algoStr, "KMeans") {
 		return RunKMeans(data)
 	}
 
-	// Add support for additional algorithms if needed
 	return nil, errors.New("unsupported algorithm")
 }
 

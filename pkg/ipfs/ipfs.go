@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +38,11 @@ type MockIPFSClient struct {
 	Valid bool
 }
 
+// NewMockIPFSClient creates a mock IPFS client
+func NewMockIPFSClient(valid bool) *MockIPFSClient {
+	return &MockIPFSClient{Valid: valid}
+}
+
 // FetchData for mock client
 func (m *MockIPFSClient) FetchData(hash string) ([]byte, error) {
 	if m.Valid {
@@ -59,6 +66,23 @@ func (m *MockIPFSClient) FetchInputs(txID string) ([]byte, []byte, error) {
 	return nil, nil, errors.New("invalid inputs")
 }
 
+func (client *IPFSClient) FetchInputs(txID string) ([]byte, []byte, error) {
+	// Fetch dataset using txID as DataHash
+	data, err := client.FetchData(txID) // Assuming txID represents a DataHash
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch data: %v", err)
+
+	}
+
+	// Fetch algorithm using txID as AlgorithmHash
+	algo, err := client.FetchAlgorithm(txID) // Assuming txID represents an AlgorithmHash
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch algorithm: %v", err)
+	}
+
+	return data, algo, nil
+}
+
 func NewIPFSClient(gatewayURL string) *IPFSClient {
 	sh := shell.NewShell(gatewayURL)
 	if !sh.IsUp() {
@@ -80,10 +104,13 @@ func NewIPFSClientWithConfig(config IPFSConfig) *IPFSClient {
 
 // Fetch data with timeout and retries
 func (client *IPFSClient) FetchData(hash string) ([]byte, error) {
-	// Fetch from IPFS without direct context support
+	log.Printf("Fetching data for hash: %s", hash) // Debug log
+	if !strings.HasPrefix(hash, "/ipfs/") {
+		hash = fmt.Sprintf("/ipfs/%s", hash)
+	}
 	reader, err := client.shell.Cat(hash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch data: %v", err)
 	}
 	defer reader.Close()
 

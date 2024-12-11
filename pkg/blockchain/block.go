@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"crypto/sha256"
+	"fmt"
 
 	"github.com/TalhaArjumand/ai-blockchain/pkg/ipfs"
 )
@@ -9,6 +10,8 @@ import (
 type Block struct {
 	Header       BlockHeader
 	Transactions []Transaction
+	Nonce        uint64
+	Hash         string
 }
 
 type BlockHeader struct {
@@ -18,6 +21,12 @@ type BlockHeader struct {
 	MerkleRoot    []byte
 	Difficulty    uint32
 	VMOutputsHash []byte
+	Hash          []byte // Add this field
+}
+
+func (h *BlockHeader) Bytes() []byte {
+	// Serialize only PreviousHash, Timestamp, and MerkleRoot
+	return append(h.PreviousHash, []byte(fmt.Sprintf("%d|%x", h.Timestamp, h.MerkleRoot))...)
 }
 
 func (b *Block) ComputeMerkleRoot() {
@@ -43,12 +52,30 @@ func (b *Block) ComputeVMOutputsHash() {
 }
 
 func (b *Block) ValidateTransactions(client ipfs.IPFSInterface) bool {
+	if len(b.Transactions) == 0 {
+		return false // No transactions in block
+	}
+
+	seenTxIDs := make(map[string]bool)
 	for _, tx := range b.Transactions {
+		// Check for duplicate transactions
+		if seenTxIDs[string(tx.TxID)] {
+			return false // Duplicate transaction detected
+		}
+		seenTxIDs[string(tx.TxID)] = true
+
+		// Fetch inputs from IPFS
 		data, algo, err := client.FetchInputs(string(tx.TxID))
-		if err != nil || data == nil || algo == nil {
+		if err != nil || data == nil || algo == nil || len(data) == 0 || len(algo) == 0 {
 			return false // Validation fails if inputs are invalid or missing
 		}
+
+		// Validate metadata (if applicable)
+		if len(tx.Metadata) == 0 {
+			return false // Invalid metadata
+		}
 	}
+
 	return true
 }
 

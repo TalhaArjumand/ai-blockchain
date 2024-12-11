@@ -1,8 +1,11 @@
 package config
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type NetworkConfig struct {
@@ -34,4 +37,27 @@ func LoadConfig(filepath string) (*Config, error) {
 		return nil, err
 	}
 	return config, nil
+}
+
+func ParseCSVToJSON(data []byte) ([]byte, error) {
+	reader := csv.NewReader(strings.NewReader(string(data)))
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var parsedData [][]float64
+	for _, record := range records[1:] { // Skip the header
+		var row []float64
+		for _, val := range record {
+			floatVal, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return nil, err
+			}
+			row = append(row, floatVal)
+		}
+		parsedData = append(parsedData, row)
+	}
+
+	return json.Marshal(parsedData)
 }

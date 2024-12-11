@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -14,12 +15,34 @@ type Blockchain struct {
 	Mutex  sync.Mutex     // For thread-safe access
 }
 
+// Reset clears all blocks in the blockchain.
+func (bc *Blockchain) Reset() {
+	bc.Mutex.Lock()
+	defer bc.Mutex.Unlock()
+	bc.Blocks = map[int]*Block{} // Reset the map entirely
+}
+
 // Create a new blockchain
 func NewBlockchain() *Blockchain {
 	return &Blockchain{
 		Blocks: make(map[int]*Block),
 		Mutex:  sync.Mutex{},
 	}
+}
+
+// Check if the blockchain already has a block with the given Merkle Root
+func (bc *Blockchain) HasDuplicateMerkleRoot(merkleRoot []byte) bool {
+	bc.Mutex.Lock()
+	defer bc.Mutex.Unlock()
+
+	for _, block := range bc.Blocks {
+		if bytes.Equal(block.Header.MerkleRoot, merkleRoot) {
+			log.Printf("Duplicate Merkle Root Found: %x", merkleRoot)
+			return true
+		}
+	}
+	log.Printf("No Duplicate Merkle Root Found: %x", merkleRoot)
+	return false
 }
 
 // Add a block to the blockchain
@@ -29,11 +52,11 @@ func (bc *Blockchain) AddBlock(block *Block) error {
 
 	// Check for duplicate blocks based on Merkle Root
 	for _, existingBlock := range bc.Blocks {
+		log.Printf("Existing Block Merkle Root: %x", existingBlock.Header.MerkleRoot)
 		if bytes.Equal(existingBlock.Header.MerkleRoot, block.Header.MerkleRoot) {
 			return fmt.Errorf("duplicate block with Merkle Root %x", block.Header.MerkleRoot)
 		}
 	}
-
 	// Set the previous hash for the new block
 	height := len(bc.Blocks)
 	if height == 0 {

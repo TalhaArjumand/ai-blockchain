@@ -87,3 +87,15 @@ func (m *Mempool) GetTransaction(hash string) *Transaction {
 	}
 	return nil
 }
+
+func (m *Mempool) GetAllTransactions() []*Transaction {
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
+
+	var txList []*Transaction
+	for _, tx := range m.Transactions {
+		txCopy := tx
+		txList = append(txList, &txCopy)
+	}
+	return txList
+}
